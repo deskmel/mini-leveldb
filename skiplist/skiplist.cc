@@ -1,8 +1,8 @@
 #include "../include/skiplist/skiplist.h"
 
-SkipList::SkipList(Comparator cmp)
+SkipList::SkipList(const Comparator* cmp)
 :   compare_(cmp),
-    head_(NewNode(0,1)),
+    head_(NewNode("0",1)),
     max_height_(1){
         for (int i=0;i<MAXLEVELOFSKIPLIST;i++){
             head_->SetNext(i,nullptr);
@@ -53,7 +53,7 @@ bool SkipList::Contains(const std::string& key) const{
 
 
 bool SkipList::KeyIsAfterNode(const std::string& key,Node* node) const{
-    return (node!=nullptr)&&(compare_.compare(node->key_,key)<0);
+    return (node!=nullptr)&&(compare_->compare(node->key_,key)<0);
 }
 
 Node* SkipList::FindGreaterOrEqual(const std::string& key,Node** prev) const{

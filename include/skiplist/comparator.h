@@ -4,10 +4,13 @@
 class Comparator{
     public:
     Comparator(){}
-    int compare(const std::string& a,const std::string& b)const{
+    ~Comparator(){}
+    virtual int compare(const std::string& a,const std::string& b)const{
         if (a>b) return 1;
         if (a==b) return 0;
         return -1;
     }
 };
+
+
 #endif

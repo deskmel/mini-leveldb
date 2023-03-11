@@ -1,31 +1,38 @@
 #include "../include/skiplist/skiplist.h"
 
-Iterator::Iterator(const SkipList* list):list_(list){
+SkipList::Iterator::Iterator(const SkipList* list):list_(list){
     node_ = nullptr;
 }
 
-bool Iterator::Valid() const{
-    return node_==nullptr;
+bool SkipList::Iterator::Valid() const{
+    return node_!=nullptr;
 }
 
-void Iterator::Next(){
+void SkipList::Iterator::Next(){
     node_ = node_->Next(0);
 }
-void Iterator::Prev(){
+void SkipList::Iterator::Prev(){
     node_ = list_->FindLessThan(node_->key_);
     if (node_ == list_->head_){
         node_ =nullptr;
     }
 }
 
-void Iterator::Seek(const std::string& target){
+void SkipList::Iterator::Seek(const std::string& target){
     node_ = list_->FindGreaterOrEqual(target,nullptr);
 }
 
-void Iterator::SeekToFirst(){
+void SkipList::Iterator::SeekToFirst(){
     node_ = list_->head_->Next(0);
 }
 
-void Iterator::SeekToLast(){
+void SkipList::Iterator::SeekToLast(){
     node_ = list_->FindLast();
+    if (node_==list_->head_){
+        node_ = nullptr;
+    }
+}
+
+const std::string& SkipList::Iterator::key() const{
+    return node_->key_;
 }

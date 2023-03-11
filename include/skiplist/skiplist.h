@@ -27,13 +27,14 @@ class SkipList
 {
 private:
     friend struct Node;
-    friend class Iterator;
+    
     int level_;
     Node* const head_;
     int max_height_;
-    Comparator const compare_;
+    const Comparator*  compare_;
 public:
-    explicit SkipList(Comparator cmp);
+    class Iterator;
+    explicit SkipList(const Comparator* cmp);
     SkipList(const SkipList&) = delete;
     SkipList& operator=(const SkipList&) = delete;
     void Insert(const std::string& key);
@@ -42,7 +43,7 @@ public:
     inline int GetMaxHeight()const {return max_height_;}
 private:
     inline bool Equal(const std::string& a,const std::string& b) const{
-        return (compare_.compare(a,b)==0);
+        return (compare_->compare(a,b)==0);
     }
     Node* FindGreaterOrEqual(const std::string& key,Node** prev) const;
     Node* FindLessThan(const std::string& key) const;
@@ -51,16 +52,16 @@ private:
     int RandomHeight();
 };
 
-class Iterator{
+class SkipList::Iterator{
 public:
     explicit Iterator(const SkipList* list);
     bool Valid() const;
-    const std::string& key() const;
     void Next();
     void Prev();
     void Seek(const std::string& target);
     void SeekToFirst();
     void SeekToLast();
+    const std::string& key() const;
 private:
     const SkipList* list_;
     Node* node_;

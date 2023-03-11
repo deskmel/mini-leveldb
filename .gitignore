@@ -1,8 +1,13 @@
 /CMakeFiles
 log.txt
 *test
-
-
+build
+bin
+_deps
+lib
+Testing
+*.cmake
+*.txt
 CMakeCache.txt
 Makefile
 cmake_install.cmake
