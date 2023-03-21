@@ -1,5 +1,0 @@
-if(EXISTS "/home/as-admin/cxz/learning/neverdb/skiplist_test[1]_tests.cmake")
-  include("/home/as-admin/cxz/learning/neverdb/skiplist_test[1]_tests.cmake")
-else()
-  add_test(skiplist_test_NOT_BUILT skiplist_test_NOT_BUILT)
-endif()
