@@ -37,6 +37,7 @@ friend class MemTableBackwardIterator;
 typedef SkipList Table;
 const Comparator* comparator_;
 Table table_;
+size_t size_;
 };
 
 

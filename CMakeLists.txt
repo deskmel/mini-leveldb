@@ -33,6 +33,16 @@ file(GLOB table_sources ./include/sstable/sstable_builder.h
                         ./sstable/sstable.cc
                         ./sstable/sstable_builder.cc)
 
+file(GLOB version_sources ./include/version/version.h
+                          ./version/version.cc)
+
+
+file(GLOB db_sources  ./include/db/db.h
+                      ./include/utils/config.h
+                      ./include/utils/filename.h
+                      ./db/db.cc
+                      ./utils/filename.cc)                        
+
 add_library(test_utils ./utils/testutils.cc)
 target_link_libraries(test_utils gtest)
 
@@ -56,6 +66,14 @@ target_link_libraries(block_test gtest_main test_utils ${memtable_sources} ${ski
 add_executable(table_test ./test/table_test.cc)
 target_link_libraries(table_test gtest_main test_utils ${table_sources} ${memtable_sources} ${skiplist_sources} ${block_sources})
 
+add_executable(version_test ./test/version_test.cc)
+target_link_libraries(version_test gtest_main test_utils ${table_sources} ${memtable_sources} ${skiplist_sources} ${block_sources} ${version_sources} ${db_sources})
+
+add_executable(version_test1 ./test/version_test1.cc)
+target_link_libraries(version_test1 gtest_main test_utils ${table_sources} ${memtable_sources} ${skiplist_sources} ${block_sources} ${version_sources} ${db_sources})
+
+
 gtest_discover_tests(skiplist_test)
 gtest_discover_tests(memtable_test)
 gtest_discover_tests(block_test)
+gtest_discover_tests(version_test)

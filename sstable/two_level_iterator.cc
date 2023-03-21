@@ -12,7 +12,7 @@ class TwoLevelIterator:public Iterator{
     void Prev() override;
 
     bool Valid() const override {
-        return data_iter_->Valid();
+        return data_iter_!=nullptr&&data_iter_->Valid();
     }
 
     std::string key() const override{
@@ -72,7 +72,7 @@ void TwoLevelIterator::Next(){
 
 void TwoLevelIterator::SkipEmptyDataBlocksForward(){
     while (data_iter_ == nullptr || !data_iter_->Valid()){
-        if (!data_iter_->Valid()){
+        if (!index_iter_->Valid()){
             SetDataIterator(nullptr);
             return;
         }

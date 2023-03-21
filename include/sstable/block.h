@@ -7,6 +7,10 @@
 struct InternalKeyEntry{
     std::string key_;
     std::string value_;
+    InternalKeyEntry(){};
+    InternalKeyEntry(std::string key,std::string value);
+    void EncodeTo(std::string& content);
+    void DecodeFrom(std::ifstream* file);
 };
 
 

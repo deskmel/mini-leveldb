@@ -9,7 +9,7 @@ static std::string GetLengthPrefixedKey(const std::string& data){
 
 static std::string GetLengthPrefixedValue(const std::string& data){
     uint32_t key_len = DecodeFixed32(data);
-    return data.substr(4+key_len+8+4);
+    return data.substr(4+key_len+4);
 }
 
 static uint64_t GetTag(const std::string& data){
@@ -37,7 +37,7 @@ int InternalKeyComparator::compare(const std::string& a,const std::string& b) co
 }
 
 MemTable::MemTable(const Comparator* cmp)
-    : comparator_(cmp),table_(comparator_){}
+    : comparator_(cmp),table_(comparator_),size_(0){}
 
 MemTable::~MemTable(){}
 
@@ -86,7 +86,9 @@ class MemTableIterator : public Iterator{
 };
 
 
-
+size_t MemTable::ApproximateMemoryUsage(){
+    return size_;
+}
 
 void MemTable::Add(SequenceNumber seq,ValueType type,const std::string& key,const std::string& value){
     size_t key_size = key.size();
@@ -96,13 +98,11 @@ void MemTable::Add(SequenceNumber seq,ValueType type,const std::string& key,cons
     std::string buf;
     PutFixed32(buf,internal_key_size);
     buf.append(key.data(),key.size());
-
     PutFixed64(buf,(seq<<8)|type);
-    
     PutFixed32(buf,val_size);
     buf.append(value.data(),value.size());
-
     table_.Insert(buf);
+    size_+=buf.size();
 }
 
 Iterator* MemTable::NewIterator(){

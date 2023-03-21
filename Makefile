@@ -224,6 +224,32 @@ block_test/fast:
 .PHONY : block_test/fast
 
 #=============================================================================
+# Target rules for targets named table_test
+
+# Build rule for target.
+table_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 table_test
+.PHONY : table_test
+
+# fast build rule for target.
+table_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/table_test.dir/build.make CMakeFiles/table_test.dir/build
+.PHONY : table_test/fast
+
+#=============================================================================
+# Target rules for targets named version_test
+
+# Build rule for target.
+version_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 version_test
+.PHONY : version_test
+
+# fast build rule for target.
+version_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/version_test.dir/build.make CMakeFiles/version_test.dir/build
+.PHONY : version_test/fast
+
+#=============================================================================
 # Target rules for targets named gmock
 
 # Build rule for target.
@@ -347,6 +373,54 @@ test/skiplist_test.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/skiplist_test.dir/build.make CMakeFiles/skiplist_test.dir/test/skiplist_test.cc.s
 .PHONY : test/skiplist_test.cc.s
 
+test/table_test.o: test/table_test.cc.o
+.PHONY : test/table_test.o
+
+# target to build an object file
+test/table_test.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/table_test.dir/build.make CMakeFiles/table_test.dir/test/table_test.cc.o
+.PHONY : test/table_test.cc.o
+
+test/table_test.i: test/table_test.cc.i
+.PHONY : test/table_test.i
+
+# target to preprocess a source file
+test/table_test.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/table_test.dir/build.make CMakeFiles/table_test.dir/test/table_test.cc.i
+.PHONY : test/table_test.cc.i
+
+test/table_test.s: test/table_test.cc.s
+.PHONY : test/table_test.s
+
+# target to generate assembly for a file
+test/table_test.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/table_test.dir/build.make CMakeFiles/table_test.dir/test/table_test.cc.s
+.PHONY : test/table_test.cc.s
+
+test/version_test.o: test/version_test.cc.o
+.PHONY : test/version_test.o
+
+# target to build an object file
+test/version_test.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/version_test.dir/build.make CMakeFiles/version_test.dir/test/version_test.cc.o
+.PHONY : test/version_test.cc.o
+
+test/version_test.i: test/version_test.cc.i
+.PHONY : test/version_test.i
+
+# target to preprocess a source file
+test/version_test.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/version_test.dir/build.make CMakeFiles/version_test.dir/test/version_test.cc.i
+.PHONY : test/version_test.cc.i
+
+test/version_test.s: test/version_test.cc.s
+.PHONY : test/version_test.s
+
+# target to generate assembly for a file
+test/version_test.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/version_test.dir/build.make CMakeFiles/version_test.dir/test/version_test.cc.s
+.PHONY : test/version_test.cc.s
+
 utils/testutils.o: utils/testutils.cc.o
 .PHONY : utils/testutils.o
 
@@ -391,7 +465,9 @@ help:
 	@echo "... gtest_main"
 	@echo "... memtable_test"
 	@echo "... skiplist_test"
+	@echo "... table_test"
 	@echo "... test_utils"
+	@echo "... version_test"
 	@echo "... test/block_test.o"
 	@echo "... test/block_test.i"
 	@echo "... test/block_test.s"
@@ -401,6 +477,12 @@ help:
 	@echo "... test/skiplist_test.o"
 	@echo "... test/skiplist_test.i"
 	@echo "... test/skiplist_test.s"
+	@echo "... test/table_test.o"
+	@echo "... test/table_test.i"
+	@echo "... test/table_test.s"
+	@echo "... test/version_test.o"
+	@echo "... test/version_test.i"
+	@echo "... test/version_test.s"
 	@echo "... utils/testutils.o"
 	@echo "... utils/testutils.i"
 	@echo "... utils/testutils.s"

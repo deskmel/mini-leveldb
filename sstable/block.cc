@@ -1,7 +1,37 @@
 #include <algorithm>
+#include <fstream>
 #include "../include/sstable/block.h"
 #include "../include/utils/code.h"
 #include "../include/utils/status.h"
+
+InternalKeyEntry::InternalKeyEntry(std::string key,std::string value):key_(key),value_(value){}
+
+void InternalKeyEntry::EncodeTo(std::string& content){
+    PutFixed32(content,key_.size());
+    content += key_;
+    PutFixed32(content,value_.size());
+    content += value_;
+}
+void InternalKeyEntry::DecodeFrom(std::ifstream* file){
+    std::string scratch;
+    char sizebuf[4];
+    file->read(sizebuf,4);
+    scratch.assign(sizebuf,4);
+    int key_size = DecodeFixed32(scratch);
+    char* keybuf = new char [key_size];
+    file->read(keybuf,key_size);
+    key_.assign(keybuf,key_size);
+    // value
+    file->read(sizebuf,4);
+    scratch.assign(sizebuf,4);
+    int value_size = DecodeFixed32(scratch);
+    char* valuebuf = new char [value_size];
+    file->read(valuebuf,value_size);
+    value_.assign(valuebuf,value_size);
+    delete [] keybuf;
+    delete [] valuebuf;
+}
+
 class Block::Iter : public Iterator{
     private:
     const Comparator* const comparator_;

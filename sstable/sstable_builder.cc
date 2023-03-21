@@ -5,13 +5,18 @@ SSTableBuilder::SSTableBuilder(std::string filename)
         num_entries_(0),
         pending_index_entry_(false)
 {
-    file_ = new std::ofstream(filename.c_str());   
-    block_builder = new BlockBuilder();
-    
+    file_ = new std::ofstream(filename.c_str(),std::ofstream::trunc|std::ios::binary);   
+    data_block_builder_ = new BlockBuilder();
+    index_block_builder_ = new BlockBuilder();
+    pending_index_handle_ = new BlockHandle();
 }
 
 SSTableBuilder::~SSTableBuilder(){
-    file_->close();
+    
+    
+    delete data_block_builder_;
+    delete index_block_builder_;
+    delete pending_index_handle_;
 }
 
 void SSTableBuilder::Add(const std::string& key,const std::string& value){
@@ -36,6 +41,7 @@ void SSTableBuilder::Flush(){
         return;
     }
     WriteBlock(data_block_builder_,pending_index_handle_);
+    pending_index_entry_ = true;
 
 }
 
@@ -53,8 +59,12 @@ bool SSTableBuilder::Finish(){
     footer.set_index_handle(index_block_handle);
     std::string footer_encoding;
     footer.EncodeTo(footer_encoding);
-    file_->write(footer_encoding.c_str(),footer_encoding.size());
+    // file_->seekp(0,std::ios::end);
+    file_->write(footer_encoding.data(),footer_encoding.size());
+    // printf("present p is %ld\n",file_->tellp());
     offset_ += footer_encoding.size();
+    file_->flush();
+    file_->close();
     return true;
 }
 
@@ -74,7 +84,8 @@ void SSTableBuilder::WriteBlock(BlockBuilder* block,BlockHandle* handle){
     std::string content = block->Finish();
     handle->set_offset(offset_);
     handle->set_size(content.size());
-    file_->write(content.c_str(),content.size());
+    // file_->seekp(0,std::ios::end);
+    file_->write(content.data(),content.size());
     offset_ += content.size();
     block->Reset();   
 }

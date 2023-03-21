@@ -1,6 +1,7 @@
 #ifndef _SSTABLE_H_
 #define _SSTABLE_H_
 #include <fstream>
+#include "../db/dbformat.h"
 #include "../iterator/iterator.h"
 #include "block.h"
 #include "block_handle.h"
@@ -21,10 +22,10 @@ public:
     ~SSTable();
     Iterator* NewIterator() const;
     uint64_t ApproximateOffsetOf(const std::string& key) const;
+    bool InternalGet(const LookupKey& l,std::string& value);
     
 private:
     explicit SSTable(Block* index_block,std::ifstream* file,Footer footer):index_block_(index_block),file_(file),footer_(footer){}
-    bool InternalGet(const std::string& key,std::string& value);
     void ReadMeta(const Footer& footer);
     
     Block* index_block_;

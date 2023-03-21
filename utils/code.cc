@@ -12,10 +12,10 @@
  uint32_t DecodeFixed32(const std::string& buffer) {
 
   // Recent clang and gcc optimize this to a single mov / ldr instruction.
-  return (static_cast<uint32_t>(buffer[0])) |
-         (static_cast<uint32_t>(buffer[1]) << 8) |
-         (static_cast<uint32_t>(buffer[2]) << 16) |
-         (static_cast<uint32_t>(buffer[3]) << 24);
+  return (static_cast<uint32_t>(uint8_t(buffer[0]))) |
+         (static_cast<uint32_t>(uint8_t(buffer[1])) << 8) |
+         (static_cast<uint32_t>(uint8_t(buffer[2])) << 16) |
+         (static_cast<uint32_t>(uint8_t(buffer[3])) << 24);
 }
 
 
@@ -33,14 +33,14 @@
 }
 
  uint64_t DecodeFixed64(const std::string& buffer){
-  return (static_cast<uint64_t>(buffer[0])) |
-         (static_cast<uint64_t>(buffer[1]) << 8) |
-         (static_cast<uint64_t>(buffer[2]) << 16) |
-         (static_cast<uint64_t>(buffer[3]) << 24) |
-         (static_cast<uint64_t>(buffer[4]) << 32) |
-         (static_cast<uint64_t>(buffer[5]) << 40) |
-         (static_cast<uint64_t>(buffer[6]) << 48) |
-         (static_cast<uint64_t>(buffer[7]) << 56);
+  return (static_cast<uint64_t>(uint8_t(buffer[0]))) |
+         (static_cast<uint64_t>(uint8_t(buffer[1])) << 8) |
+         (static_cast<uint64_t>(uint8_t(buffer[2])) << 16) |
+         (static_cast<uint64_t>(uint8_t(buffer[3])) << 24) |
+         (static_cast<uint64_t>(uint8_t(buffer[4])) << 32) |
+         (static_cast<uint64_t>(uint8_t(buffer[5])) << 40) |
+         (static_cast<uint64_t>(uint8_t(buffer[6])) << 48) |
+         (static_cast<uint64_t>(uint8_t(buffer[7])) << 56);
 }
 
 
@@ -48,11 +48,13 @@ void PutFixed32(std::string& dst, uint32_t value){
     std::string tmp;
     tmp.resize(4);
     EncodeFixed32(tmp,value);
-    dst += tmp;
+    dst.append(tmp,0,4);
 }
 void PutFixed64(std::string& dst, uint64_t value){
     std::string tmp;
     tmp.resize(8);
     EncodeFixed64(tmp,value);
-    dst += tmp;
+    // uint64_t magic = DecodeFixed64(tmp);
+    // printf("%ld %ld\n",magic,value);
+    dst.append(tmp,0,8);
 }
