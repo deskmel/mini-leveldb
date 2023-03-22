@@ -92,6 +92,16 @@ void Version::AddFile(FileMetaData* meta,int level){
     }
 }
 
+void Version::DeleteFile(int level,FileMetaData* meta){
+    for (size_t i=0;i<files_[level].size();i++){
+        FileMetaData* f = files_[i];
+        if (meta->number = f->number){
+            files[level].erase(files[level].begin+i);
+            break;
+        }
+    }
+}
+
 uint64_t  Version::Save(){
     uint64_t n = next_file_number_ ++;
     std::string filename= DescriptorFileName(dbname_,n);
@@ -102,10 +112,17 @@ uint64_t  Version::Save(){
 }
 
 int Version::FindFile(int level,const InternalKeyEntry& key){
-    auto iter = lower_bound(files_[level].begin(),files_[level].end(),key.key_,[&](const FileMetaData* a,const std::string b){
-        return a->largest.key_<b;
+    // auto iter = lower_bound(files_[level].begin(),files_[level].end(),key.key_,[&](const FileMetaData* a,const std::string b){
+    //     return a->largest.key_<b;
+    // });
+    // return iter-files_[level].begin();
+    return FindFile(files_[level],key.key_);
+}
+int Version::FindFile(const std::vector<FileMetaData*>& level_files,std::string target){
+    auto iter = lower_bound(level_files.begin(),level_files.end(),target,[&](const FileMetaData* a,const std::string b){
+        return a->largest<b;
     });
-    return iter-files_[level].begin();
+    return iter-files_[level].begin();;
 }
 
 bool Version::Get(const LookupKey& key,std::string& value){
@@ -158,6 +175,86 @@ void Version::WriteLevel0Table(MemTable* imm){
     AddFile(meta,0);
 }
 
+Iterator* Version::MakeInputIterator(Compaction* c){
+    // const int space = (c->level_ == 0 ? c->inputs_[0].size()+1:2);
+    vector<Iterator*> list(space);
+    // int num = 0
+    for (size_t i=0;i<c->inputs_[0].size();i++){
+        list.push_back(SSTable::Open(TableFileName(dbname_,c->inputs_[0][i]->number)).NewIterator());
+    }
+    for (size_t i=0;i<c->inputs_[1].size();i++){
+        list.push_back(SSTable::Open(TableFileName(dbname_,c->inputs_[1][i]->number)).NewIterator());
+    }
+    // for (int which=0;which<2;which++){
+    //     if (!c->inputs_[which].empty()){
+    //         if (c->level_ + which ==0){
+    //             const std::vector<FileMetaData*>& files = c->inputs_[which];
+    //             for (size_t i=0;i<files.size();i++){
+    //                 list[num++] = SSTable::Open(TableFileName(dbname_,files[i]->number)).NewIterator();
+    //             }
+    //         }else{
+    //             list[num++] = NewTwoLevelIterator(
+    //                 new Version::LevelFileNumIterator(c->inputs_[which]),
+    //             )
+    //         }
+    //     }
+    // }
+    Iterator* result = NewMergingIterator(list);
+    return result;
+}
+
+bool Version::DoCompactionWork(){
+    Compaction* c = PickCompaction();
+    if (c==nullptr) return false;
+    if (c->IsTrivalMove()){
+        for (FileMetaData* f:c->inputs_[0]){
+            DeleteFile(c->level,f);
+            AddFile(c->level+1,f);
+        }
+        return true;
+    }
+
+    Iterator* iter = MakeInputIterator(c);
+    InternalKeyEntry *current=nullptr;
+    vector<FileMetaData*> list;
+    for (iter->SeekToFirst();iter->Valid();iter->Next()){
+        FileMetaData* meta = new FileMetaData();
+        meta->allowed_seeks = 1<<30;
+        meta->number = v.NextFileNumber();
+        SSTableBuilder builder = SSTableBuilder(TableFileName(dbname_,meta.number));
+        meta->smallest = InternalKeyEntry(iter->key(),iter->value());
+        for (;iter->Valid();iter->Next()){
+            InternalKeyEntry p = InternalKeyEntry(iter->key(),iter->value());
+            if (current!=nullptr){
+                if (current->user_key() == p.user_key()){
+                    continue;
+                }
+            }
+            current = p;
+            meta->largest = p;
+            builder.Add(p);
+            if (builder.FileSize()>MaxFileSize){
+                break;
+            }
+        }
+        builder.Finish();
+        meta->file_size = uint64_t(builder.FileSize());
+        list.push_back(meta);
+    }
+    for (int i=0;i<c->inputs_[0].size();i++){
+        v.DeleteFile(c->level,c->inputs_[0][i]);
+    }
+    for (int i=0;i<c->inputs_[1].size();i++){
+        v.DeleteFile(c->level+1,c->inputs_[1][i]);
+    }
+    for (int i=0;i<list.size();i++){
+        v.AddFile(c->level+1,list[i]);
+    }
+    return true;
+}
+
+
+
 void FileMetaData::EncodeTo(std::string& content){
     PutFixed32(content,allowed_seeks);
     PutFixed32(content,number);
@@ -180,7 +277,166 @@ void FileMetaData::DecodeFrom(std::ifstream *file){
     largest.DecodeFrom(file);
 }
 
+void Version::GetRange(const std::vector<FileMetaData*>& inputs,InternalKeyEntry& smallest,InternalKeyEntry& largest){
+    for (size_t i=0;i<inputs.size();i++){
+        FileMetaData* f = input[i];
+        if (i==0){
+            smallest = f->smallest;
+            largest = f->largest;
+        }else{
+            if (f->smallest<smallest) {
+                smallest = f->smallest;
+            }
+            if (f->largest>largest){
+                largest = f->largest;
+            }
+        }
+    }
+}
+
+void Version::GetRange2(const std::vector<FileMetaData*>& inputs1,
+                        const std::vector<FileMetaData*>& inputs2,
+                        InternalKeyEntry& smallest,InternalKeyEntry& largest){
+    std::vector<FileMetaData*> all = inputs1;
+    all.insert(all.end(),inputs2.begin(),inputs2.end());
+    GetRange(all,smallest,largest);
+                        }
 
 
+Compaction* Version::PickCompaction(){
+    Compaction* c;
+    int level;
+    const bool size_compaction = (current->compaction_score_>=1);
+    if (size_compaction){
+        level = current->compaction_level_;
+        c = new Compaction();
+        for (size_t i=0;i<files_[level].size();i++){
+            FileMetaData* f = files[level][i];
+            if (compact_pointer_[level].empty()||f->largest.key_>compact_pointer_[level]){
+                c->inputs_[0].push_back(f);
+                break;
+            }
+        }
+        if (c->inputs_[0].empty()){
+            c->inputs_[0].push_back(files_[level][0]);
+        }
+    }else{
+        return nullptr;
+    }
+    InternalKeyEntry smallest,largest;
+    if (level == 0){
+        GetRange(c->inputs_[0],smallest,largest);
+        GetOverlappingInputs(0,smallest,largest,c->inputs_[0]);
+    }
+    // set inputs_[1]
+    AddBoundaryInputs(files_[level],c->inputs_[0]);
+    GetRange(c->inputs_[0],smallest,largest);
+
+    GetOverlappingInputs(level+1,smallest,largest,c->inputs_[1]);
+    AddBoundaryInputs(files_[level+1],c->inputs_[1]);
+    // set compact pointer
+    compact_pointer_[level] = largest.key_();
+    return c;
+}
+void Version::GetOverlappingInputs(int level,InternalKeyEntry& begin,InternalKeyEntry& end,std::vector<FileMetaData*>& inputs){
+    inputs.clear();
+    std::string user_begin,user_end;
+    user_begin = begin.user_key();
+    user_end = end.user_key();
+    for (size_t i=0;i<files_[level][i].size();i++){
+        FileMetaData* f = files_[level][i++];
+        const std::string file_start = f->smallest.user_key();
+        const std::striing file_limit = f->largest.user_key();
+        if (file_limit<user_begin||file_start>user_end){
+            continue;
+        }else{
+            inputs.push_back(f);
+        }
+    }
+}
+bool FindLargestKey(const std::vector<FileMetaData*>& files,InternalKey& largest_key){
+    if (files.empty()) return false;
+
+    largest_key = files[0]->largest;
+    for (size_t i=1;i<files.size();i++){
+        FileMetaData* f = files[i];
+        if (f->largest>largest_key){
+            largest_key = f->largest;
+        }
+    }
+    return true;
+}
 
 
+FileMetaData* FindSmallestBoundaryFile(const std::vector<FileMetaData*>& level_files,const InternalKeyEntry& largest_key){
+    FileMetaData* smallest_boundary_file = nullptr;
+    for (size_t i=0;i<level_files.size();i++){
+        FileMetaData* f = level_files[i];
+        if (f->smallest>largest&&f->small_key.user_key()==largest_key.user_key()){
+            if (smallest_boundary_file==nullptr||f->smallest<smallest_boundary_file->smallest){
+                smallest_boundary_file = f;
+            }
+        }
+    }
+    return smallest_boundary_file;
+
+}
+void Version::AddBoundaryInputs(const std::vector<FileMetaData*>& level_files,std::vector<FileMetaData*>& compaction_files){
+    InternalKeyEntry largest_key;
+    if (!FindLargestKey(compaction_files,largest_key)){
+        return;
+    }
+    bool continue_searching = true;
+    while (continue_searching){
+        FileMetaData* smallest_boundary_file = FindSmallestBoundaryFile(level_files,largest_key);
+        if (smallest_boundary_file!=nullptr){
+            compaction_files.push_back(smallest_boundary_file);
+            largest_key = smallest_boundary_file->largest;
+        }else{
+            continue_searching = false;
+        }
+    }
+
+}
+
+Compaction* Version::PickCompactionLevel(){
+    int best_level = -1;
+    double best_score = -1;
+    for (int level = 0;level<kNumLevels-1;k++){
+        double score;
+        if (level == 0 ){
+            score = v->files[level].size()/static_cast<double>(kL0_CompactionTrigger);
+        }else{
+            const uint64_t level_bytes = TotalFileSize(v->files_[level]);
+            score = static_cast<double>(level_bytes)/MaxFileSizeForLevel(level);
+        }
+    }
+    if (score>best_score){
+        best_level = level;
+        best_score = score;
+    }
+    v->compaction_level_ = best_level;
+    v->compaction_score_ = best_score;
+}
+
+
+uint64_t Version::TotalFileSize(std::vector<FileMetaData*> files){
+    uint64_t totalfilesbytes = 0;
+    for (auto file: files){
+        totalfilesbytes+=file->file_size;
+    }
+    return totalfilesbytes;
+}
+
+static double MaxBytesForLevel(int level){
+  double result = 10. * 1048576.0;
+  while (level > 1) {
+    result *= 10;
+    level--;
+  }
+  return result;
+}
+
+bool Compaction::IsTrivialMove(){
+    return (inputs_[0].size()==1&&inputs_[1].size()==0);
+}

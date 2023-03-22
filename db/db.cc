@@ -5,7 +5,7 @@
 #include "../include/utils/code.h"
 #include "../include/utils/status.h"
 DB::DB(){
-    
+    thread t = thread(this,&BGWork);
 }
 
 DB* DB::Open(std::string dbname){
@@ -123,8 +123,10 @@ void DB::BackgroundCompaction(){
         // minor compaction
         version->WriteLevel0Table(imm);
         return;
+    }else{
+        // major compaction
+        version->DoCompactionWork();
     }
-    // major compaction
     uint64_t descriptorNumber = version->Save();
 	SetCurrentFile(descriptorNumber);
 	mu_.lock();

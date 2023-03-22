@@ -12,6 +12,8 @@
 
 
 
+
+
 struct FileMetaData{
     int allowed_seeks;
     uint64_t number;
@@ -22,9 +24,21 @@ struct FileMetaData{
     void DecodeFrom(std::ifstream* file);
 };
 
-class Version{
-    
+struct Compaction{
+    std::vector<FileMetaData*> inputs_[2]; 
+    int level_;
     public:
+    Compaction(int level):level_(level){}
+    bool IsTrivialMove();
+}
+
+Iterator* NewMergingIterator(std::vector<Iterator*>& children)
+
+class Version{
+private:
+    class MergingIterator;
+    class LevelFileNumIterator;
+public:
     static const int kNumLevels = 12;
     static Version* Load(std::string dbname,uint64_t seqNum);
     static Version* New(std::string dbname);
@@ -38,6 +52,10 @@ class Version{
     uint64_t Save();
     uint64_t NextFileNumber();
     int NumLevelFiles(int level);
+    Compaction* PickCompaction();
+    int PickCompactionLevel();
+    bool DoCompactionWork();
+    Iterator* MakeInputIterator(Compaction* c);
     private:
     int FindFile(int level,const InternalKeyEntry& key);
     uint64_t seqNum_;
@@ -49,6 +67,7 @@ class Version{
     int file_to_compact_level_;
     double compaction_score_;
     int compaction_level_;
+    std::string compact_pointer_[config::kNumLevels];
 
 };
 
