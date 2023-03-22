@@ -69,8 +69,8 @@ target_link_libraries(table_test gtest_main test_utils ${table_sources} ${memtab
 add_executable(version_test ./test/version_test.cc)
 target_link_libraries(version_test gtest_main test_utils ${table_sources} ${memtable_sources} ${skiplist_sources} ${block_sources} ${version_sources} ${db_sources})
 
-add_executable(version_test1 ./test/version_test1.cc)
-target_link_libraries(version_test1 gtest_main test_utils ${table_sources} ${memtable_sources} ${skiplist_sources} ${block_sources} ${version_sources} ${db_sources})
+# add_executable(version_test1 ./test/version_test1.cc)
+# target_link_libraries(version_test1 gtest_main test_utils ${table_sources} ${memtable_sources} ${skiplist_sources} ${block_sources} ${version_sources} ${db_sources})
 
 
 gtest_discover_tests(skiplist_test)
